@@ -2,9 +2,10 @@
 
 export TF_VAR_project=$GCP_PROJECT_NAME
 
-BACKEND=$PWD/terraform/backend.conf
+TERRAFORM_PATH=$PWD/terraform
+BACKEND=$TERRAFORM_PATH/backend.conf
 
-#TODO: create keyfile.json file from env variable
+echo "$GCP_KEYFILE_JSON" > "$TERRAFORM_PATH/keyfile.json"
 
 : > "$BACKEND"
 {
