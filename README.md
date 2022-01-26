@@ -18,9 +18,9 @@ This is a popular "what came first - the chicken or the egg" problem.
 
 | repository / secret name   | GCP_KEYFILE_JSON | GCP_PROJECT_NAME | GCP_BUCKET_NAME |
 | -------------------------- |      :---:       |      :---:       |      :---:      |
-| boilerplate-infrastructure | x                | x                | x               |
-| boilerplate-frontend       | x                |                  |                 |
-| boilerplate-backend        | x                |                  |                 |
+| boilerplate-infrastructure | •                | •                | •               |
+| boilerplate-frontend       | •                |                  |                 |
+| boilerplate-backend        | •                |                  |                 |
 
 With the above settings, using GitHub Actions will be possible and internal scripts will be able to perform operations on the GCP cloud.
 
