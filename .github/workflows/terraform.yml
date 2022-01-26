@@ -1,8 +1,8 @@
+name: Terraform workflow
 on:
   push:
     branches:
       - main
-name: Terraform workflow
 jobs:
   apply-terraform:
     runs-on: ubuntu-latest
