@@ -5,3 +5,8 @@
 .idea/**/shelf
 
 .env
+
+terraform/.terraform
+terraform/.terraform.lock.hcl
+terraform/keyfile.json
+terraform/backend.conf

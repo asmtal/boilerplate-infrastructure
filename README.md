@@ -17,6 +17,7 @@ This is a popular "what came first - the chicken or the egg" problem.
 7. Now you need to set some variables in GitHub repository secrets (your repository -> Settings -> Secrets -> Actions -> "New repository secret"):
    * `boilerplate-infrastructure` repository
       * `GCP_KEYFILE_JSON` - generated private keyfile json for the created service account
+      * `GCP_PROJECT_NAME` - [project-name]
       * `GCP_BUCKET_NAME` - [bucket-name]
    * `boilerplate-frontend` repository
       * `GCP_KEYFILE_JSON` - as above
@@ -30,4 +31,7 @@ and with changes to the configuration (terraform in our case), the production in
 
 ## Setup infrastructure
 
-TBA
+```shell
+$ bin/terraform init -backend-config=backend.conf
+$ bin/terraform apply
+```
