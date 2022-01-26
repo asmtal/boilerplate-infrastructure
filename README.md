@@ -24,6 +24,13 @@ This is a popular "what came first - the chicken or the egg" problem.
    * `boilerplate-backend` repository
       * `GCP_KEYFILE_JSON` - as above
 
+7. Now you need to set some variables in GitHub repository secrets (your repository -> Settings -> Secrets -> Actions -> "New repository secret"):
+| repository                 | GCP_KEYFILE_JSON | GCP_PROJECT_NAME | GCP_BUCKET_NAME |
+|----------------------------|------------------|------------------|-----------------|
+| boilerplate-infrastructure | x                | x                | x               |
+| boilerplate-frontend       | x                |                  |                 |
+| boilerplate-backend        | x                |                  |                 |
+
 With the above settings, using GitHub Actions will be possible and internal scripts will be able to perform operations on the GCP cloud.
 
 **Note that the key has also been uploaded to the `boilerplate-infrastructure` repo - which means that infrastructure is code too, 
