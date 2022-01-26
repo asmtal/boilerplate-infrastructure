@@ -33,3 +33,9 @@ and with changes to the configuration (terraform in our case), the production in
 $ bin/terraform init -backend-config=backend.conf
 $ bin/terraform apply
 ```
+
+## Destroy infrastructure
+
+```shell
+$ bin/terraform destroy
+```
