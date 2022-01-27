@@ -1,6 +1,7 @@
 #!/bin/bash
 
-export TF_VAR_project=$GCP_PROJECT_NAME
+export TF_VAR_project=$GCP_PROJECT_ID
+export TF_VAR_region=$GCP_REGION
 
 TERRAFORM_PATH=$PWD/terraform
 BACKEND=$TERRAFORM_PATH/backend.conf
