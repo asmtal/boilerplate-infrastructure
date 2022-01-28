@@ -10,6 +10,7 @@ jobs:
       GCP_KEYFILE_JSON: ${{ secrets.GCP_KEYFILE_JSON }}
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
     steps:
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
