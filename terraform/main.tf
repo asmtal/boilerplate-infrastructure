@@ -1,5 +1,33 @@
 terraform {
   backend "gcs" {}
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "4.8.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "4.8.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.7.1"
+    }
+  }
+}
+
+## ---------- Providers ----------
+
+//TODO: Use the official names of environment variables (for project, region, etc.).
+//  https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference#full-reference
+
+provider "kubernetes" {
+  host  = "https://${data.google_container_cluster.default.endpoint}"
+  token = data.google_client_config.default.access_token
+  cluster_ca_certificate = base64decode(
+    data.google_container_cluster.default.master_auth[0].cluster_ca_certificate
+  )
 }
 
 provider "google" {
@@ -14,66 +42,41 @@ provider "google-beta" {
   region      = var.region
 }
 
-resource "google_project_service" "cloudresourcemanager_service" {
-  service                    = "cloudresourcemanager.googleapis.com"
-  disable_dependent_services = true
+## ---------- Modules ----------
+
+module "gcp-bootstrap" {
+  source = "./gcp-bootstrap"
+  region = var.region
 }
 
-resource "google_project_service" "artifactregistry_service" {
-  service                    = "artifactregistry.googleapis.com"
-  disable_dependent_services = true
+module "gke-cluster" {
+  source       = "./gke-cluster"
+  cluster_name = local.cluster_name
+  region       = var.region
+  project      = var.project
+  depends_on   = [module.gcp-bootstrap]
 }
 
-resource "google_project_service" "compute_service" {
-  service                    = "compute.googleapis.com"
-  disable_dependent_services = true
+module "kubernetes-config" {
+  source       = "./kubernetes-config"
+  cluster_name = local.cluster_name
+  depends_on   = [module.gke-cluster]
 }
 
-resource "google_project_service" "container_service" {
-  service                    = "container.googleapis.com"
-  disable_dependent_services = true
+## ---------- Locals ----------
+
+locals {
+  cluster_name = "${var.project}-gke"
 }
 
-resource "google_artifact_registry_repository" "project_repository" {
-  provider = google-beta
+## ---------- Data ----------
 
-  location      = var.region
-  repository_id = "project"
-  format        = "DOCKER"
+data "google_client_config" "default" {
+  depends_on = [module.gke-cluster]
 }
 
-## Kubernetes
-
-resource "google_compute_network" "vpc" {
-  name                    = "${var.project}-vpc"
-  auto_create_subnetworks = false
-}
-
-resource "google_compute_subnetwork" "subnet" {
-  name          = "${var.project}-subnet"
-  network       = google_compute_network.vpc.name
-  ip_cidr_range = "10.10.0.0/24"
-}
-
-resource "google_container_cluster" "gke_cluster" {
-  name     = "${var.project}-gke"
-  location = var.region
-
-  initial_node_count       = 1
-  remove_default_node_pool = true
-
-  network    = google_compute_network.vpc.name
-  subnetwork = google_compute_subnetwork.subnet.name
-}
-
-resource "google_container_node_pool" "gke_cluster_node_pool" {
-  name    = "${google_container_cluster.gke_cluster.name}-node-pool"
-  cluster = google_container_cluster.gke_cluster.name
-
-  node_count = var.gke_cluster_node_count
+data "google_container_cluster" "default" {
+  name       = local.cluster_name
+  depends_on = [module.gke-cluster]
   location   = var.region
-
-  node_config {
-    machine_type = "e2-micro"
-  }
 }

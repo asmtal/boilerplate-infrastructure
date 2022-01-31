@@ -41,3 +41,9 @@ $ bin/terraform apply
 ```shell
 $ bin/terraform destroy
 ```
+
+## Infrastructure code formatting
+
+```shell
+$ bin/terraform fmt -recursive
+```
