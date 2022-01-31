@@ -4,27 +4,27 @@ resource "kubernetes_namespace" "gke_namespace_project" {
   }
 }
 
-resource "kubernetes_deployment" "gke_deployment_gateway" {
+resource "kubernetes_deployment" "gke_deployment_frontend" {
   metadata {
-    name      = "gateway"
+    name      = "frontend"
     namespace = kubernetes_namespace.gke_namespace_project.metadata.0.name
   }
   spec {
     selector {
       match_labels = {
-        app = "gateway"
+        app = "frontend"
       }
     }
     template {
       metadata {
         labels = {
-          app = "gateway"
+          app = "frontend"
         }
       }
       spec {
         container {
-          image = "nginx:1.21"
-          name  = "nginx"
+          image = "${var.region}-docker.pkg.dev/${var.project}/project/frontend:latest"
+          name  = "frontend-nginx"
 
           resources {
             limits = {
@@ -42,15 +42,15 @@ resource "kubernetes_deployment" "gke_deployment_gateway" {
   }
 }
 
-resource "kubernetes_service" "gke_service_gateway" {
+resource "kubernetes_service" "gke_service_frontend" {
   metadata {
-    name      = "gateway"
+    name      = "frontend"
     namespace = kubernetes_namespace.gke_namespace_project.metadata.0.name
   }
   spec {
     type = "LoadBalancer"
     selector = {
-      app = "gateway"
+      app = "frontend"
     }
     port {
       protocol = "TCP"

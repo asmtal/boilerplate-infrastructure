@@ -18,6 +18,10 @@ resource "google_container_node_pool" "gke_cluster_node_pool" {
 
   node_config {
     machine_type = "e2-small"
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
   }
 }
 

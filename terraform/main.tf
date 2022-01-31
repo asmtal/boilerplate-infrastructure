@@ -60,6 +60,8 @@ module "gke-cluster" {
 module "kubernetes-config" {
   source       = "./kubernetes-config"
   cluster_name = local.cluster_name
+  project      = var.project
+  region       = var.region
   depends_on   = [module.gke-cluster]
 }
 
