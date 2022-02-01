@@ -4,6 +4,8 @@ resource "kubernetes_namespace" "gke_namespace_project" {
   }
 }
 
+## ---------- Deployments ----------
+
 resource "kubernetes_deployment" "gke_deployment_frontend" {
   metadata {
     name      = "frontend"
@@ -42,13 +44,15 @@ resource "kubernetes_deployment" "gke_deployment_frontend" {
   }
 }
 
+## ---------- Services ----------
+
 resource "kubernetes_service" "gke_service_frontend" {
   metadata {
     name      = "frontend"
     namespace = kubernetes_namespace.gke_namespace_project.metadata.0.name
   }
   spec {
-    type = "LoadBalancer"
+    type = "NodePort"
     selector = {
       app = "frontend"
     }
@@ -56,5 +60,32 @@ resource "kubernetes_service" "gke_service_frontend" {
       protocol = "TCP"
       port     = 80
     }
+  }
+}
+
+## ---------- Ingress ----------
+
+resource "kubernetes_ingress" "gke_ingress_gateway" {
+  wait_for_load_balancer = true
+  metadata {
+    name      = "gateway"
+    namespace = kubernetes_namespace.gke_namespace_project.metadata.0.name
+  }
+  spec {
+    backend {
+      service_name = kubernetes_service.gke_service_frontend.metadata.0.name
+      service_port = 80
+    }
+//    rule {
+//      http {
+//        path {
+//          path = "/api/*"
+//          backend {
+//            service_name = kubernetes_service.gke_service_backend.metadata.0.name
+//            service_port = 3000
+//          }
+//        }
+//      }
+//    }
   }
 }

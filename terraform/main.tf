@@ -20,15 +20,8 @@ terraform {
 ## ---------- Providers ----------
 
 //TODO: Use the official names of environment variables (for project, region, etc.).
+//  Maybe there is even an environment variable that stores the keyfile json file.
 //  https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference#full-reference
-
-provider "kubernetes" {
-  host  = "https://${data.google_container_cluster.default.endpoint}"
-  token = data.google_client_config.default.access_token
-  cluster_ca_certificate = base64decode(
-    data.google_container_cluster.default.master_auth[0].cluster_ca_certificate
-  )
-}
 
 provider "google" {
   credentials = file("${path.module}/keyfile.json")
@@ -42,10 +35,18 @@ provider "google-beta" {
   region      = var.region
 }
 
+provider "kubernetes" {
+  host  = "https://${data.google_container_cluster.default.endpoint}"
+  token = data.google_client_config.default.access_token
+  cluster_ca_certificate = base64decode(
+  data.google_container_cluster.default.master_auth[0].cluster_ca_certificate
+  )
+}
+
 ## ---------- Modules ----------
 
-module "gcp-bootstrap" {
-  source = "./gcp-bootstrap"
+module "gcp-init" {
+  source = "./gcp-init"
   region = var.region
 }
 
@@ -54,11 +55,11 @@ module "gke-cluster" {
   cluster_name = local.cluster_name
   region       = var.region
   project      = var.project
-  depends_on   = [module.gcp-bootstrap]
+  depends_on   = [module.gcp-init]
 }
 
-module "kubernetes-config" {
-  source       = "./kubernetes-config"
+module "k8s-config" {
+  source       = "./k8s-config"
   cluster_name = local.cluster_name
   project      = var.project
   region       = var.region

@@ -1,3 +1,5 @@
+## ---------- Services ----------
+
 resource "google_project_service" "cloudresourcemanager_service" {
   service                    = "cloudresourcemanager.googleapis.com"
   disable_dependent_services = true
@@ -17,6 +19,8 @@ resource "google_project_service" "container_service" {
   service                    = "container.googleapis.com"
   disable_dependent_services = true
 }
+
+## ---------- Registry repositories ----------
 
 resource "google_artifact_registry_repository" "project_repository" {
   provider = google-beta

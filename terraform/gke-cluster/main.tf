@@ -25,6 +25,8 @@ resource "google_container_node_pool" "gke_cluster_node_pool" {
   }
 }
 
+## ---------- Networks ----------
+
 resource "google_compute_network" "vpc" {
   name                    = "${var.project}-vpc"
   auto_create_subnetworks = false
