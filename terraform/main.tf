@@ -39,7 +39,7 @@ provider "kubernetes" {
   host  = "https://${data.google_container_cluster.default.endpoint}"
   token = data.google_client_config.default.access_token
   cluster_ca_certificate = base64decode(
-  data.google_container_cluster.default.master_auth[0].cluster_ca_certificate
+    data.google_container_cluster.default.master_auth[0].cluster_ca_certificate
   )
 }
 
@@ -50,12 +50,20 @@ module "gcp-init" {
   region = var.region
 }
 
+module "cloud-sql" {
+  source                 = "./cloud-sql"
+  private_network_id     = google_compute_network.private_network.id
+  private_vpc_connection = google_service_networking_connection.private_vpc_connection
+  root_password          = random_password.sql_root_password.result
+  depends_on             = [module.gcp-init]
+}
+
 module "gke-cluster" {
   source       = "./gke-cluster"
   cluster_name = local.cluster_name
   region       = var.region
-  project      = var.project
-  depends_on   = [module.gcp-init]
+  vpc_name     = local.vpc_name
+  depends_on   = [module.gcp-init, module.cloud-sql]
 }
 
 module "k8s-config" {
@@ -66,13 +74,59 @@ module "k8s-config" {
   depends_on   = [module.gke-cluster]
 }
 
+## ---------- Networking ----------
+
+resource "google_compute_network" "private_network" {
+  name                    = local.vpc_name
+  auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "private_network_subnet" {
+  name          = "${local.vpc_name}-subnet"
+  network       = google_compute_network.private_network.name
+  ip_cidr_range = "10.10.0.0/24"
+}
+
+resource "google_compute_global_address" "private_ip_address" {
+  name          = "private-ip"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 16
+  network       = google_compute_network.private_network.self_link
+}
+
+resource "google_service_networking_connection" "private_vpc_connection" {
+  network                 = google_compute_network.private_network.id
+  service                 = "servicenetworking.googleapis.com"
+  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+}
+
+//resource "google_compute_firewall" "default" {
+//  name    = "vpc-firewall"
+//  network = google_compute_network.private_network.name
+//  source_ranges = [
+//    "${google_compute_global_address.private_ip_address.address}/32"
+//  ]
+//  allow {
+//    protocol = "tcp"
+//    ports    = ["22"]
+//  }
+//}
+
 ## ---------- Locals ----------
 
 locals {
   cluster_name = "${var.project}-gke"
+  vpc_name     = "${var.project}-vpc"
 }
 
 ## ---------- Data ----------
+
+resource "random_password" "sql_root_password" {
+  length           = 16
+  special          = true
+  override_special = "_%@"
+}
 
 data "google_client_config" "default" {
   depends_on = [module.gke-cluster]
@@ -82,4 +136,21 @@ data "google_container_cluster" "default" {
   name       = local.cluster_name
   depends_on = [module.gke-cluster]
   location   = var.region
+}
+
+// temporary (for private network tests only):
+resource "google_compute_instance" "gcp_instance" {
+  name         = "instance-1"
+  machine_type = "e2-micro"
+  zone         = "europe-central2-a"
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-9"
+    }
+  }
+
+  network_interface {
+    subnetwork = google_compute_subnetwork.private_network_subnet.self_link
+  }
 }

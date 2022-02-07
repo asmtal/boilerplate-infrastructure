@@ -5,8 +5,8 @@ resource "google_container_cluster" "gke_cluster" {
   initial_node_count       = 1
   remove_default_node_pool = true
 
-  network    = google_compute_network.vpc.name
-  subnetwork = google_compute_subnetwork.subnet.name
+  network    = var.vpc_name
+  subnetwork = "${var.vpc_name}-subnet"
 }
 
 resource "google_container_node_pool" "gke_cluster_node_pool" {
@@ -23,17 +23,8 @@ resource "google_container_node_pool" "gke_cluster_node_pool" {
       "https://www.googleapis.com/auth/cloud-platform"
     ]
   }
-}
 
-## ---------- Networks ----------
-
-resource "google_compute_network" "vpc" {
-  name                    = "${var.project}-vpc"
-  auto_create_subnetworks = false
-}
-
-resource "google_compute_subnetwork" "subnet" {
-  name          = "${var.project}-subnet"
-  network       = google_compute_network.vpc.name
-  ip_cidr_range = "10.10.0.0/24"
+  lifecycle {
+    create_before_destroy = true
+  }
 }

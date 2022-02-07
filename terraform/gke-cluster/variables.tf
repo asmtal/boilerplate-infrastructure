@@ -1,5 +1,5 @@
-variable "project" {}
 variable "region" {}
+variable "vpc_name" {}
 variable "cluster_name" {
   type = string
 }

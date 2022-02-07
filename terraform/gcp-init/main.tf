@@ -20,6 +20,16 @@ resource "google_project_service" "container_service" {
   disable_dependent_services = true
 }
 
+resource "google_project_service" "sqladmin_service" {
+  service                    = "sqladmin.googleapis.com"
+  disable_dependent_services = true
+}
+
+resource "google_project_service" "servicenetworking_service" {
+  service                    = "servicenetworking.googleapis.com"
+  disable_dependent_services = true
+}
+
 ## ---------- Registry repositories ----------
 
 resource "google_artifact_registry_repository" "project_repository" {
