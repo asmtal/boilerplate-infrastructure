@@ -1,0 +1,15 @@
+name: Destroy terraform configuration
+on: workflow_dispatch
+jobs:
+  destroy-terraform:
+    runs-on: ubuntu-latest
+    env:
+      GCP_KEYFILE_JSON: ${{ secrets.GCP_KEYFILE_JSON }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_BUCKET_NAME: ${{ secrets.GCP_BUCKET_NAME }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v1
+      - run: bin/terraform init -backend-config=backend.conf
+      - run: bin/terraform apply -destroy -auto-approve

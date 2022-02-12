@@ -1,4 +1,4 @@
-name: Terraform workflow
+name: Apply terraform configuration
 on:
   push:
     branches:
