@@ -164,6 +164,10 @@ resource "google_compute_instance" "gcp_instance" {
     }
   }
 
+  service_account {
+    scopes = ["cloud-platform"]
+  }
+
   network_interface {
     network    = google_compute_network.private_network.self_link
     subnetwork = google_compute_subnetwork.private_network_subnet.self_link

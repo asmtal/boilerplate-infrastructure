@@ -29,11 +29,12 @@ With the above settings, using GitHub Actions will be possible and internal scri
 **Note that the keyfile json has also been uploaded to the `boilerplate-infrastructure` repo - which means that infrastructure is code too, 
 and with changes to the configuration (terraform in our case), the production infrastructure will be affected.**
 
-## Working with code (development)
+## Working with code (manual changes from the local environment)
 
 ### Infrastructure setup
 
 * Authenticate to your `gcloud` account to fully manage your cloud resources.
+* Set the environment variables on your machine (the same ones that are required in the `boilerplate-infrastructure` repository secrets).
 * Apply configuration (networking, sql, cluster, k8s configuration etc.):
 
 ```shell
@@ -60,9 +61,9 @@ $ bin/terraform destroy
 $ bin/terraform fmt -recursive
 ```
 
-## Troubleshooting
+## Troubleshooting - popular problems
 
-* **"Google Cloud APIs"** problem
+* **"Google Cloud APIs is not ready yet"**
 
 First time running `terraform apply` - there may be problems with 
 Google Cloud APIs. Terraform does not know when a particular API 
@@ -70,7 +71,7 @@ will be available. You'll have to wait a few minutes. Subsequent
 runs should pass without problems - this is due to 
 the `disable_on_destroy` configuration.
 
-* **"Zone unavailability"** problem
+* **"Zone unavailability"**
 
 Sometimes a zone may not be available or there is no space 
 for the resources you want to create. Don't worry - it can 
