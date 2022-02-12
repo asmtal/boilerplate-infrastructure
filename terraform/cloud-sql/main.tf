@@ -13,11 +13,9 @@ resource "google_sql_database_instance" "sql_instance" {
   settings {
     tier = "db-n1-standard-2"
     ip_configuration {
-      private_network = var.private_network_id
+      private_network = var.private_vpc_network.id
     }
   }
-
-  depends_on = [var.private_vpc_connection]
 }
 
 resource "google_sql_database" "sql_database" {

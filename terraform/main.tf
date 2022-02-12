@@ -51,19 +51,26 @@ module "gcp-init" {
 }
 
 module "cloud-sql" {
-  source                 = "./cloud-sql"
-  private_network_id     = google_compute_network.private_network.id
-  private_vpc_connection = google_service_networking_connection.private_vpc_connection
-  root_password          = random_password.sql_root_password.result
-  depends_on             = [module.gcp-init]
+  source              = "./cloud-sql"
+  private_vpc_network = google_compute_network.private_network
+  root_password       = random_password.sql_root_password.result
+  depends_on = [
+    google_compute_network.private_network,
+    google_service_networking_connection.private_vpc_connection
+  ]
 }
 
 module "gke-cluster" {
-  source       = "./gke-cluster"
-  cluster_name = local.cluster_name
-  region       = var.region
-  vpc_name     = local.vpc_name
-  depends_on   = [module.gcp-init, module.cloud-sql]
+  source                 = "./gke-cluster"
+  cluster_name           = local.cluster_name
+  region                 = var.region
+  private_vpc_network    = google_compute_network.private_network
+  private_vpc_subnetwork = google_compute_subnetwork.private_network_subnet
+  depends_on = [
+    module.cloud-sql,
+    google_compute_network.private_network,
+    google_compute_subnetwork.private_network_subnet
+  ]
 }
 
 module "k8s-config" {
@@ -83,8 +90,9 @@ resource "google_compute_network" "private_network" {
 
 resource "google_compute_subnetwork" "private_network_subnet" {
   name          = "${local.vpc_name}-subnet"
-  network       = google_compute_network.private_network.name
+  network       = google_compute_network.private_network.self_link
   ip_cidr_range = "10.10.0.0/24"
+  depends_on    = [google_compute_network.private_network]
 }
 
 resource "google_compute_global_address" "private_ip_address" {
@@ -92,13 +100,18 @@ resource "google_compute_global_address" "private_ip_address" {
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
   prefix_length = 16
-  network       = google_compute_network.private_network.self_link
+  network       = google_compute_network.private_network.id
+  depends_on    = [google_compute_network.private_network]
 }
 
 resource "google_service_networking_connection" "private_vpc_connection" {
   network                 = google_compute_network.private_network.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+  depends_on = [
+    google_compute_network.private_network,
+    google_compute_global_address.private_ip_address
+  ]
 }
 
 //resource "google_compute_firewall" "default" {
@@ -134,15 +147,16 @@ data "google_client_config" "default" {
 
 data "google_container_cluster" "default" {
   name       = local.cluster_name
-  depends_on = [module.gke-cluster]
   location   = var.region
+  depends_on = [module.gke-cluster]
 }
 
 // temporary (for private network tests only):
 resource "google_compute_instance" "gcp_instance" {
-  name         = "instance-1"
-  machine_type = "e2-micro"
-  zone         = "europe-central2-a"
+  name                      = "instance-1"
+  machine_type              = "e2-micro"
+  zone                      = "${var.region}-a"
+  allow_stopping_for_update = true
 
   boot_disk {
     initialize_params {
@@ -151,6 +165,12 @@ resource "google_compute_instance" "gcp_instance" {
   }
 
   network_interface {
+    network    = google_compute_network.private_network.self_link
     subnetwork = google_compute_subnetwork.private_network_subnet.self_link
   }
+
+  depends_on = [
+    google_compute_network.private_network,
+    google_compute_subnetwork.private_network_subnet
+  ]
 }

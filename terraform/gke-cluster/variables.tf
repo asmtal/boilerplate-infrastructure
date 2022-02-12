@@ -1,5 +1,6 @@
 variable "region" {}
-variable "vpc_name" {}
+variable "private_vpc_network" {}
+variable "private_vpc_subnetwork" {}
 variable "cluster_name" {
   type = string
 }

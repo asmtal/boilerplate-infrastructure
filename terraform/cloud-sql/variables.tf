@@ -1,3 +1,2 @@
-variable "private_network_id" {}
-variable "private_vpc_connection" {}
+variable "private_vpc_network" {}
 variable "root_password" {}

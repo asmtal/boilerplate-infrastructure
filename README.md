@@ -21,7 +21,7 @@ This is a popular "what came first - the chicken or the egg" problem.
 | ------------------------ |           :---:            |        :---:         |        :---:        |
 | GCP_KEYFILE_JSON         | `[keyfile_json]`           | `[keyfile_json]`     | `[keyfile_json]`    |
 | GCP_PROJECT_ID           | `[project_id]`             | `[project_id]`       | `[project_id]`      |
-| GCP_REGION               | `europe-central2`          | `europe-central2`    | `europe-central2`   |
+| GCP_REGION               | `us-central1`              | `us-central1`        | `us-central1`       |
 | GCP_BUCKET_NAME          | `[bucket_name]`            |                      |                     |
 
 With the above settings, using GitHub Actions will be possible and internal scripts will be able to perform operations on the GCP cloud.
@@ -29,21 +29,49 @@ With the above settings, using GitHub Actions will be possible and internal scri
 **Note that the keyfile json has also been uploaded to the `boilerplate-infrastructure` repo - which means that infrastructure is code too, 
 and with changes to the configuration (terraform in our case), the production infrastructure will be affected.**
 
-## Setup infrastructure
+## Working with code (development)
+
+### Infrastructure setup
+
+* Authenticate to your `gcloud` account to fully manage your cloud resources.
+* Apply configuration (networking, sql, cluster, k8s configuration etc.):
 
 ```shell
 $ bin/terraform init -backend-config=backend.conf
 $ bin/terraform apply
 ```
 
-## Destroy infrastructure
+* Push front-end and back-end images to the Artifact Registry.
+
+Once you have properly configured your repositories based 
+on `boilerplate-frontend` and `boilerplate-backend`, all you 
+need to do is run the CI process and the images will be 
+found in the registry.
+
+### Infrastructure destroying
 
 ```shell
 $ bin/terraform destroy
 ```
 
-## Infrastructure code formatting
+### Code formatting
 
 ```shell
 $ bin/terraform fmt -recursive
 ```
+
+## Troubleshooting
+
+* **"Google Cloud APIs"** problem
+
+First time running `terraform apply` - there may be problems with 
+Google Cloud APIs. Terraform does not know when a particular API 
+will be available. You'll have to wait a few minutes. Subsequent 
+runs should pass without problems - this is due to 
+the `disable_on_destroy` configuration.
+
+* **"Zone unavailability"** problem
+
+Sometimes a zone may not be available or there is no space 
+for the resources you want to create. Don't worry - it can 
+happen - just wait and try again in a few minutes.
