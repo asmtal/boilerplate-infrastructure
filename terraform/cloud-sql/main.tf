@@ -13,6 +13,7 @@ resource "google_sql_database_instance" "sql_instance" {
   settings {
     tier = "db-n1-standard-2"
     ip_configuration {
+      ipv4_enabled    = false
       private_network = var.private_vpc_network.id
     }
   }

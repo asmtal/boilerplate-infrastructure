@@ -91,14 +91,15 @@ resource "google_compute_network" "private_network" {
 resource "google_compute_subnetwork" "private_network_subnet" {
   name          = "${local.vpc_name}-subnet"
   network       = google_compute_network.private_network.self_link
-  ip_cidr_range = "10.10.0.0/24"
+  ip_cidr_range = "10.20.0.0/24"
   depends_on    = [google_compute_network.private_network]
 }
 
-resource "google_compute_global_address" "private_ip_address" {
-  name          = "private-ip"
+resource "google_compute_global_address" "private_ip_range" {
+  name          = "private-ip-range"
   purpose       = "VPC_PEERING"
   address_type  = "INTERNAL"
+  address       = "10.30.0.0"
   prefix_length = 16
   network       = google_compute_network.private_network.id
   depends_on    = [google_compute_network.private_network]
@@ -107,24 +108,12 @@ resource "google_compute_global_address" "private_ip_address" {
 resource "google_service_networking_connection" "private_vpc_connection" {
   network                 = google_compute_network.private_network.id
   service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
+  reserved_peering_ranges = [google_compute_global_address.private_ip_range.name]
   depends_on = [
     google_compute_network.private_network,
-    google_compute_global_address.private_ip_address
+    google_compute_global_address.private_ip_range
   ]
 }
-
-//resource "google_compute_firewall" "default" {
-//  name    = "vpc-firewall"
-//  network = google_compute_network.private_network.name
-//  source_ranges = [
-//    "${google_compute_global_address.private_ip_address.address}/32"
-//  ]
-//  allow {
-//    protocol = "tcp"
-//    ports    = ["22"]
-//  }
-//}
 
 ## ---------- Locals ----------
 
@@ -157,6 +146,7 @@ resource "google_compute_instance" "gcp_instance" {
   machine_type              = "e2-micro"
   zone                      = "${var.region}-a"
   allow_stopping_for_update = true
+  tags                      = ["allow-ssh"]
 
   boot_disk {
     initialize_params {
@@ -176,5 +166,21 @@ resource "google_compute_instance" "gcp_instance" {
   depends_on = [
     google_compute_network.private_network,
     google_compute_subnetwork.private_network_subnet
+  ]
+}
+
+resource "google_compute_firewall" "firewall_rule_ssh" {
+  name          = "firewall-rule-ssh"
+  network       = google_compute_network.private_network.self_link
+  target_tags   = ["allow-ssh"]
+  source_ranges = ["0.0.0.0/0"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  depends_on = [
+    google_compute_network.private_network
   ]
 }
