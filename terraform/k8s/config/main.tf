@@ -68,7 +68,7 @@ resource "kubernetes_deployment" "gke_deployment_backend" {
 
           env {
             name  = "MYSQL_HOST"
-            value = "34.116.167.45"
+            value = var.sql.database_host
           }
 
           env {
@@ -78,12 +78,17 @@ resource "kubernetes_deployment" "gke_deployment_backend" {
 
           env {
             name  = "MYSQL_PASSWORD"
-            value = "mysql-password"
+            value = var.sql.database_password
           }
 
           env {
             name  = "MYSQL_DATABASE"
-            value = "mysql-database"
+            value = var.sql.database_name
+          }
+
+          env {
+            name  = "PORT"
+            value = 80
           }
 
           resources {
@@ -132,9 +137,8 @@ resource "kubernetes_service" "gke_service_backend" {
       app = "backend"
     }
     port {
-      protocol    = "TCP"
-      port        = 80
-      target_port = 3002
+      protocol = "TCP"
+      port     = 80
     }
   }
 }

@@ -36,151 +36,83 @@ provider "google-beta" {
 }
 
 provider "kubernetes" {
-  host  = "https://${data.google_container_cluster.default.endpoint}"
-  token = data.google_client_config.default.access_token
+  host  = "https://${module.k8s.data_container_cluster.endpoint}"
+  token = module.k8s.data_client_config.access_token
   cluster_ca_certificate = base64decode(
-    data.google_container_cluster.default.master_auth[0].cluster_ca_certificate
+    module.k8s.data_container_cluster.master_auth[0].cluster_ca_certificate
   )
 }
 
 ## ---------- Modules ----------
 
-module "gcp-init" {
-  source = "./gcp-init"
+module "__init" {
+  source = "./__init"
+
   region = var.region
 }
 
-module "cloud-sql" {
-  source              = "./cloud-sql"
-  private_vpc_network = google_compute_network.private_network
-  root_password       = random_password.sql_root_password.result
+module "networking" {
+  source = "./networking"
+
   depends_on = [
-    google_compute_network.private_network,
-    google_service_networking_connection.private_vpc_connection
+    module.__init
   ]
 }
 
-module "gke-cluster" {
-  source                 = "./gke-cluster"
-  cluster_name           = local.cluster_name
-  region                 = var.region
-  private_vpc_network    = google_compute_network.private_network
-  private_vpc_subnetwork = google_compute_subnetwork.private_network_subnet
+module "sql" {
+  source = "./sql"
+
+  network = module.networking.network
+
   depends_on = [
-    module.cloud-sql,
-    google_compute_network.private_network,
-    google_compute_subnetwork.private_network_subnet
+    module.__init,
+    module.networking
   ]
 }
 
-module "k8s-config" {
-  source       = "./k8s-config"
-  cluster_name = local.cluster_name
-  project      = var.project
-  region       = var.region
-  depends_on   = [module.gke-cluster]
-}
+module "k8s" {
+  source = "./k8s"
 
-## ---------- Networking ----------
+  region     = var.region
+  project    = var.project
+  network    = module.networking.network
+  subnetwork = module.networking.subnetwork
+  sql        = module.sql
 
-resource "google_compute_network" "private_network" {
-  name                    = local.vpc_name
-  auto_create_subnetworks = false
-}
-
-resource "google_compute_subnetwork" "private_network_subnet" {
-  name          = "${local.vpc_name}-subnet"
-  network       = google_compute_network.private_network.self_link
-  ip_cidr_range = "10.20.0.0/24"
-  depends_on    = [google_compute_network.private_network]
-}
-
-resource "google_compute_global_address" "private_ip_range" {
-  name          = "private-ip-range"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  address       = "10.30.0.0"
-  prefix_length = 16
-  network       = google_compute_network.private_network.id
-  depends_on    = [google_compute_network.private_network]
-}
-
-resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.private_network.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_range.name]
   depends_on = [
-    google_compute_network.private_network,
-    google_compute_global_address.private_ip_range
+    module.__init,
+    module.networking,
+    module.sql
   ]
 }
 
-## ---------- Locals ----------
+module "__temporary__" {
+  source = "./__temporary__"
 
-locals {
-  cluster_name = "${var.project}-gke"
-  vpc_name     = "${var.project}-vpc"
+  region     = var.region
+  network    = module.networking.network
+  subnetwork = module.networking.subnetwork
+
+  depends_on = [
+    module.networking
+  ]
 }
 
-## ---------- Data ----------
+## ---------- Connectivity Test - instance -> sql ----------
 
-resource "random_password" "sql_root_password" {
-  length           = 16
-  special          = true
-  override_special = "_%@"
-}
+# Terraform has a bug - does not allow to pass "--destination-cloud-sql-instance",
+#   so I have to refer to the instance via IP addresses.
+resource "google_network_management_connectivity_test" "instance_to_sql_test" {
+  name     = "instance-to-sql-test"
+  protocol = "TCP"
 
-data "google_client_config" "default" {
-  depends_on = [module.gke-cluster]
-}
-
-data "google_container_cluster" "default" {
-  name       = local.cluster_name
-  location   = var.region
-  depends_on = [module.gke-cluster]
-}
-
-// temporary (for private network tests only):
-resource "google_compute_instance" "gcp_instance" {
-  name                      = "instance-1"
-  machine_type              = "e2-micro"
-  zone                      = "${var.region}-a"
-  allow_stopping_for_update = true
-  tags                      = ["allow-ssh"]
-
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-9"
-    }
+  source {
+    ip_address = module.__temporary__.instance.network_interface.0.network_ip
   }
 
-  service_account {
-    scopes = ["cloud-platform"]
+  destination {
+    ip_address = module.sql.instance.private_ip_address
+    network    = module.networking.network.self_link
+    port       = 3306
   }
-
-  network_interface {
-    network    = google_compute_network.private_network.self_link
-    subnetwork = google_compute_subnetwork.private_network_subnet.self_link
-  }
-
-  depends_on = [
-    google_compute_network.private_network,
-    google_compute_subnetwork.private_network_subnet
-  ]
-}
-
-resource "google_compute_firewall" "firewall_rule_ssh" {
-  name          = "firewall-rule-ssh"
-  network       = google_compute_network.private_network.self_link
-  target_tags   = ["allow-ssh"]
-  source_ranges = ["0.0.0.0/0"]
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
-
-  depends_on = [
-    google_compute_network.private_network
-  ]
 }

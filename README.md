@@ -61,6 +61,36 @@ $ bin/terraform destroy
 $ bin/terraform fmt -recursive
 ```
 
+### Working with `kubectl` locally
+
+#### Initial settings to access the cluster
+
+1. Get credentials and update KUBECONFIG (`~/.kube/config`):
+
+```shell
+$ gcloud container clusters get-credentials [cluster_name] --region [region]
+```
+
+2. Verify that you are in the right context:
+
+```shell
+$ gcloud config current-context
+```
+
+3. Verify that you see resources from your cluster:
+
+```shell
+$ kubectl get pods --namespace [namespace]
+```
+
+#### Connect to the kubernetes pod
+
+```shell
+$ kubectl exec --stdin --tty [pod_name] -c [container_name] --namespace=[namespace] -- /bin/bash
+```
+
+#### For more details - see k8s configurations - [/terraform/k8s/config/main.tf](https://github.com/rootsher/boilerplate-infrastructure/tree/main/terraform/k8s/config/main.tf)
+
 ## Troubleshooting - popular problems
 
 * **"Google Cloud APIs is not ready yet"**
@@ -76,3 +106,9 @@ the `disable_on_destroy` configuration.
 Sometimes a zone may not be available or there is no space 
 for the resources you want to create. Don't worry - it can 
 happen - just wait and try again in a few minutes.
+
+* Getting dynamic values from the configuration:
+
+```shell
+$ bin/terraform output -raw database_host
+```

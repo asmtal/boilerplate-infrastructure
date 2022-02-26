@@ -1,12 +1,17 @@
 resource "google_container_cluster" "gke_cluster" {
-  name     = var.cluster_name
+  name     = "${var.project}-gke-cluster"
   location = var.region
 
   initial_node_count       = 1
   remove_default_node_pool = true
 
-  network    = var.private_vpc_network.self_link
-  subnetwork = var.private_vpc_subnetwork.self_link
+  network    = var.network.self_link
+  subnetwork = var.subnetwork.self_link
+
+  ip_allocation_policy {
+    cluster_secondary_range_name  = var.subnetwork.secondary_ip_range.0.range_name
+    services_secondary_range_name = var.subnetwork.secondary_ip_range.1.range_name
+  }
 }
 
 resource "google_container_node_pool" "gke_cluster_node_pool" {
