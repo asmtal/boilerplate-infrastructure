@@ -1,4 +1,9 @@
-# boilerplate-infrastructure
+# [@rootsher/boilerplate-infrastructure](https://github.com/rootsher/boilerplate-infrastructure)
+
+[![GitHub issues](https://img.shields.io/github/issues/rootsher/boilerplate-infrastructure.svg)](https://github.com/rootsher/boilerplate-infrastructure/issues)
+[![GitHub PRs](https://img.shields.io/github/issues-pr/rootsher/boilerplate-infrastructure.svg)](https://github.com/rootsher/boilerplate-infrastructure/pulls)
+
+<img src="https://raw.githubusercontent.com/rootsher/boilerplate-infrastructure/master/docs/assets/img/infrastructure.png">
 
 ## Initial steps in the [GCP Console](https://console.cloud.google.com)
 
